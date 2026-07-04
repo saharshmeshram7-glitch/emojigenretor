@@ -2,21 +2,53 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Emoji Generator</title>
+
     <link rel="stylesheet" href="style.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div class="container">
-        <h1>AI Emoji Generator 🎨</h1>
-        <p>Create custom emojis using AI</p>
+<div class="background"></div>
 
+<div class="container">
+
+    <h1>✨ Emoji Generator</h1>
+
+    <p>Create stunning  emojis instantly 🎨</p>
+
+    <div class="input-group">
         <input type="text" id="prompt" placeholder="Enter emoji prompt..." />
-        <button onclick="generateEmoji()">Generate Emoji</button>
 
-        <div id="output"></div>
+        <select id="style">
+            <option value="3d emoji">3D</option>
+            <option value="cute emoji">Cute</option>
+            <option value="pixel emoji">Pixel</option>
+            <option value="cartoon emoji">Cartoon</option>
+            <option value="anime emoji">Anime</option>
+            <option value="GIF emoji" >GIF</option>
+        </select>
     </div>
 
-    <script src="script.js"></script>
+    <div class="buttons">
+        <button onclick="generateEmoji()">Generate</button>
+        <button onclick="randomPrompt()">Random</button>
+    </div>
+
+    <div id="loading" class="hidden">
+        <div class="loader"></div>
+        <p>Generating  Emoji...</p>
+    </div>
+
+    <div id="output"></div>
+
+    <div id="history"></div>
+
+</div>
+
+<script src="script.js"></script>
+
 </body>
 </html>

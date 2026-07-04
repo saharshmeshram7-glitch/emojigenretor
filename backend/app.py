@@ -4,39 +4,78 @@ import requests
 import base64
 from io import BytesIO
 from PIL import Image
+import random
+import time
+from urllib.parse import quote
 
 app = Flask(__name__)
-CORS(app)   # <-- THIS LINE FIXES EVERYTHING
+CORS(app)
+
+
+@app.route("/")
+def home():
+    return "Emoji API Working 🚀"
+
+
+# Helper function
+def fetch_image(url):
+    for i in range(5):
+        try:
+            response = requests.get(url, timeout=30)
+
+            if response.status_code == 200:
+                return response
+
+        except Exception as e:
+            print("Retrying...", e)
+            time.sleep(2)
+
+    return None
 
 
 @app.route("/generate-emoji", methods=["POST"])
 def generate_emoji():
-    data = request.get_json()
-    prompt = data.get("prompt", "")
+    try:
+        data = request.get_json()
+        prompt = data.get("prompt", "")
 
-    if not prompt:
-        return jsonify({"error": "Prompt is required"}), 400
+        if not prompt:
+            return jsonify({"error": "Prompt required"}), 400
 
-    # Enhance prompt for emoji-style image
-    emoji_prompt = f"{prompt}, emoji style, flat design, simple, colorful, vector icon"
+        seed = random.randint(1, 999999)
 
-    # Pollinations free image generation API
-    image_url = f"https://image.pollinations.ai/prompt/{emoji_prompt.replace(' ', '+')}"
+        clean_prompt = quote(
+            f"{prompt} emoji, flat icon, simple"
+        )
 
-    response = requests.get(image_url)
+        url = (
+            f"https://image.pollinations.ai/prompt/"
+            f"{clean_prompt}?width=512&height=512&seed={seed}"
+        )
 
-    if response.status_code != 200:
-        return jsonify({"error": "Image generation failed"}), 500
+        response = fetch_image(url)
 
-    # Convert image to Base64
-    image = Image.open(BytesIO(response.content)).convert("RGBA")
-    buffer = BytesIO()
-    image.save(buffer, format="PNG")
-    image_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        if not response:
+            return jsonify({"error": "⚠️ Server busy, try again"}), 500
 
-    return jsonify({
-        "image": image_base64
-    })
+        # Check if API returned image
+        if "image" not in response.headers.get("Content-Type", ""):
+            return jsonify({"error": "Invalid response from API"}), 500
+
+        img = Image.open(BytesIO(response.content)).convert("RGBA")
+
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+
+        img_str = base64.b64encode(
+            buffer.getvalue()
+        ).decode()
+
+        return jsonify({"image": img_str})
+
+    except Exception as e:
+        print("Error:", e)
+        return jsonify({"error": "Something went wrong"}), 500
 
 
 if __name__ == "__main__":
