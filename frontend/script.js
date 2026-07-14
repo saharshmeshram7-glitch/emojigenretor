@@ -1,3 +1,8 @@
+// Change this to your deployed Render backend URL after deploying your backend service
+const BACKEND_URL = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+    ? "http://127.0.0.1:5000"
+    : "https://your-backend-name.onrender.com";
+
 const prompts = [
     "happy cat",
     "angry robot",
@@ -30,7 +35,7 @@ async function generateEmoji() {
     try {
 
         const response = await fetch(
-            "http://127.0.0.1:5000/generate-emoji",
+            `${BACKEND_URL}/generate-emoji`,
             {
                 method: "POST",
                 headers: {
