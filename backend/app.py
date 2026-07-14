@@ -74,8 +74,9 @@ def generate_emoji():
         return jsonify({"image": img_str})
 
     except Exception as e:
+        import traceback
         print("Error:", e)
-        return jsonify({"error": "Something went wrong"}), 500
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 500
 
 
 if __name__ == "__main__":
