@@ -38,11 +38,29 @@ def generate_emoji():
     try:
         data = request.get_json()
         prompt = data.get("prompt", "")
+        image_b64 = data.get("image", "")
 
         if not prompt:
             return jsonify({"error": "Prompt required"}), 400
 
         seed = random.randint(1, 999999)
+
+        uploaded_url = None
+        if image_b64:
+            try:
+                if "," in image_b64:
+                    image_b64 = image_b64.split(",")[1]
+                image_bytes = base64.b64decode(image_b64)
+                
+                files = {'file': ('image.png', image_bytes, 'image/png')}
+                upload_res = requests.post("https://tmpfiles.org/api/v1/upload", files=files, timeout=15)
+                if upload_res.status_code == 200:
+                    res_json = upload_res.json()
+                    if res_json.get("status") == "success":
+                        raw_url = res_json["data"]["url"]
+                        uploaded_url = raw_url.replace("tmpfiles.org/", "tmpfiles.org/dl/")
+            except Exception as upload_err:
+                print("Image upload failed:", upload_err)
 
         clean_prompt = quote(
             f"{prompt} emoji, flat icon, simple"
@@ -52,6 +70,9 @@ def generate_emoji():
             f"https://image.pollinations.ai/prompt/"
             f"{clean_prompt}?width=512&height=512&seed={seed}"
         )
+
+        if uploaded_url:
+            url += f"&image={quote(uploaded_url)}"
 
         response = fetch_image(url)
 

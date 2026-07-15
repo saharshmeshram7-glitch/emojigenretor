@@ -3,6 +3,28 @@ const BACKEND_URL = window.location.hostname === "127.0.0.1" || window.location.
     ? "http://127.0.0.1:5000"
     : "https://emojigenretor.onrender.com";
 
+let selectedImageBase64 = "";
+
+function previewImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        selectedImageBase64 = e.target.result;
+        document.getElementById("image-preview").src = selectedImageBase64;
+        document.getElementById("image-preview-container").classList.remove("hidden");
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeImage() {
+    selectedImageBase64 = "";
+    document.getElementById("image-upload").value = "";
+    document.getElementById("image-preview").src = "";
+    document.getElementById("image-preview-container").classList.add("hidden");
+}
+
 const prompts = [
     "happy cat",
     "angry robot",
@@ -34,6 +56,13 @@ async function generateEmoji() {
 
     try {
 
+        const payload = {
+            prompt: `${prompt} ${style}`
+        };
+        if (selectedImageBase64) {
+            payload.image = selectedImageBase64;
+        }
+
         const response = await fetch(
             `${BACKEND_URL}/generate-emoji`,
             {
@@ -41,9 +70,7 @@ async function generateEmoji() {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    prompt: `${prompt} ${style}`
-                })
+                body: JSON.stringify(payload)
             }
         );
 

@@ -28,6 +28,17 @@
     <div class="input-group">
         <input type="text" id="prompt" placeholder="Enter emoji prompt..." />
 
+        <div class="file-upload-container">
+            <label for="image-upload" class="file-upload-label">
+                📸 Reference Photo (Optional)
+            </label>
+            <input type="file" id="image-upload" accept="image/*" style="display: none;" onchange="previewImage(event)" />
+            <div id="image-preview-container" class="hidden">
+                <img id="image-preview" src="" alt="Preview">
+                <button type="button" class="remove-image-btn" onclick="removeImage()">✕</button>
+            </div>
+        </div>
+
         <select id="style">
             <option value="3d emoji">3D</option>
             <option value="cute emoji">Cute</option>
