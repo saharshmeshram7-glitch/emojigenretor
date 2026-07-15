@@ -52,6 +52,8 @@ async function generateEmoji() {
     }
 
     loading.classList.remove("hidden");
+    const loadingMsg = document.getElementById("loading").querySelector("p");
+    loadingMsg.textContent = "Generating Emoji... (First time may take ~60 secs ⏳)";
     outputDiv.innerHTML = "";
 
     try {
@@ -63,6 +65,10 @@ async function generateEmoji() {
             payload.image = selectedImageBase64;
         }
 
+        // 2-minute timeout to handle Render cold start
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
+
         const response = await fetch(
             `${BACKEND_URL}/generate-emoji`,
             {
@@ -70,9 +76,11 @@ async function generateEmoji() {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: controller.signal
             }
         );
+        clearTimeout(timeoutId);
 
         const data = await response.json();
 
@@ -102,10 +110,15 @@ async function generateEmoji() {
 
         loading.classList.add("hidden");
 
+        let message = "Something went wrong. Please try again!";
+        if (error.name === "AbortError") {
+            message = "⏳ Request timed out. Server cold start le raha hai — thoda wait karke try karo!";
+        } else if (!navigator.onLine) {
+            message = "📶 No internet connection!";
+        }
+
         outputDiv.innerHTML = `
-            <p style="color:red;">
-                Server Error!
-            </p>
+            <p style="color:#f87171;">${message}</p>
         `;
     }
 }
