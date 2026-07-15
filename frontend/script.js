@@ -111,3 +111,43 @@ document
             generateEmoji();
         }
     });
+
+// Register Service Worker
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js")
+            .then((reg) => console.log("Service Worker registered!", reg))
+            .catch((err) => console.error("Service Worker registration failed:", err));
+    });
+}
+
+// Handle PWA Installation
+let deferredPrompt;
+const installBtn = document.getElementById("install-btn");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn) {
+        installBtn.classList.remove("hidden");
+    }
+});
+
+if (installBtn) {
+    installBtn.addEventListener("click", async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to install prompt: ${outcome}`);
+            deferredPrompt = null;
+            installBtn.classList.add("hidden");
+        }
+    });
+}
+
+window.addEventListener("appinstalled", () => {
+    console.log("PWA was installed");
+    if (installBtn) {
+        installBtn.classList.add("hidden");
+    }
+});
