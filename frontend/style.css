@@ -51,6 +51,27 @@ body {
     text-align: center;
 }
 
+.logo-container {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+}
+
+.logo-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    object-fit: cover;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s ease;
+}
+
+.logo-img:hover {
+    transform: scale(1.1) rotate(5deg);
+    border-color: #8b5cf6;
+}
+
 h1 {
     font-size: 32px;
     margin-bottom: 10px;
