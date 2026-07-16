@@ -4,7 +4,6 @@ import os
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
-# Yahan lowercase 'flask' kar diya hai taaki crash na ho
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
@@ -27,7 +26,8 @@ def fetch_image(url):
         "Accept": "image/*, */*"
     }
     try:
-        response = requests.get(url, timeout=12, headers=headers)
+        # Timeout ko 15 seconds kiya safe rehne ke liye
+        response = requests.get(url, timeout=15, headers=headers)
         if response.status_code == 200:
             content_type = response.headers.get("Content-Type", "")
             if "image" in content_type and len(response.content) > 1000:
@@ -50,9 +50,9 @@ def generate_emoji():
         if not prompt:
             return jsonify({"error": "Prompt required"}), 400
 
-        safe_prompt = prompt.encode('ascii', 'ignore').decode('ascii').strip()
+        safe_prompt = quote(prompt.encode('ascii', 'ignore').decode('ascii').strip())
         if not safe_prompt:
-            safe_prompt = "cute emoji"
+            safe_prompt = "cute%20emoji"
 
         uploaded_url = None
         if image_b64:
@@ -70,7 +70,7 @@ def generate_emoji():
             except Exception as upload_err:
                 print(f"Upload failed: {upload_err}")
 
-        clean_prompt = quote(f"{safe_prompt}, standard 3D Apple emoji style, highly detailed classic emoji, clean, glossy, isolated on plain white background")
+        clean_prompt = f"{safe_prompt},standard%203D%20Apple%20emoji%20style,highly%20detailed%20classic%20emoji,clean,glossy,isolated%20on%20plain%20white%20background"
 
         # --- DYNAMIC FAST GIF LOGIC ---
         if is_gif:
@@ -78,9 +78,10 @@ def generate_emoji():
             for i in range(2):
                 seed = random.randint(1, 999999)
                 if uploaded_url:
-                    url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=kontext&nologo=true&nofeed=true&image={quote(uploaded_url)}"
+                    url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=turbo&nologo=true&nofeed=true&image={quote(uploaded_url)}"
                 else:
-                    url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=flux&nologo=true&nofeed=true"
+                    # Yahan 'model=turbo' lagaya hai jo super fast hai
+                    url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=turbo&nologo=true&nofeed=true"
                 
                 res = fetch_image(url)
                 if res:
@@ -112,7 +113,7 @@ def generate_emoji():
 
             img = Image.open(BytesIO(res.content)).convert("RGBA")
             buffer = BytesIO()
-            img.save(buffer, format="PNG")
+            img.save(buffer, buffer.format if buffer.format else "PNG")
             img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
             return jsonify({"image": img_str})
 
