@@ -4,6 +4,22 @@ const BACKEND_URL = window.location.hostname === "127.0.0.1" || window.location.
 
 let selectedImageBase64 = "";
 
+// HTML waale button ke liye missing function jo ab error theek kar dega
+function randomPrompt() {
+    const emojiIdeas = [
+        "cyberpunk cat with neon glowing glasses",
+        "happy ninja avocado holding a sword",
+        "cute gaming teddy bear wearing red headphones",
+        "funny angry broccoli with mustache",
+        "cool fire dragon blowing colorful bubble gum"
+    ];
+    const randomIndex = Math.floor(Math.random() * emojiIdeas.length);
+    const promptInput = document.getElementById("prompt");
+    if (promptInput) {
+        promptInput.value = emojiIdeas[randomIndex];
+    }
+}
+
 function previewImage(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -67,7 +83,7 @@ async function generateEmoji() {
                 <button onclick="downloadImage('${data.image}', '${fileExt}')" style="padding:10px 20px; background:#6366f1; color:white; border:none; border-radius:8px; cursor:pointer;">Download</button>
             `;
         } else {
-            outputDiv.innerHTML = `<p style=\"color:#f87171;\">${data.error || "Error occurred"}</p>`;
+            outputDiv.innerHTML = `<p style="color:#f87171;">${data.error || "Error occurred"}</p>`;
         }
     } catch (error) {
         loading.classList.add("hidden");
