@@ -60,7 +60,7 @@ async function generateEmoji() {
             prompt: `${prompt} ${style}`
         };
 
-        // GIF select hone par backend ko flag bhej rahe hain
+        // GIF option checked
         if (style === "GIF emoji") {
             payload.is_gif = true;
         }
@@ -69,7 +69,6 @@ async function generateEmoji() {
             payload.image = selectedImageBase64;
         }
 
-        // 2-minute timeout to handle Render cold start
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 120000);
 
@@ -90,7 +89,6 @@ async function generateEmoji() {
         loading.classList.add("hidden");
 
         if (data.image) {
-            // Dynamic format detection for rendering and downloading
             const isGif = style === "GIF emoji";
             const mimeType = isGif ? "image/gif" : "image/png";
             const fileExt = isGif ? "gif" : "png";
@@ -122,9 +120,7 @@ async function generateEmoji() {
             message = "📶 No internet connection!";
         }
 
-        outputDiv.innerHTML = `
-            <p style="color:#f87171;">${message}</p>
-        `;
+        outputDiv.innerHTML = `<p style="color:#f87171;">${message}</p>`;
     }
 }
 
@@ -138,19 +134,15 @@ function downloadImage(base64, ext = "png") {
 }
 
 function randomPrompt() {
-    const random = prompts[
-        Math.floor(Math.random() * prompts.length)
-    ];
+    const random = prompts[Math.floor(Math.random() * prompts.length)];
     document.getElementById("prompt").value = random;
 }
 
-document
-    .getElementById("prompt")
-    .addEventListener("keypress", function (e) {
-        if (e.key === "Enter") {
-            generateEmoji();
-        }
-    });
+document.getElementById("prompt").addEventListener("keypress", function (e) {
+    if (e.key === "Enter") {
+        generateEmoji();
+    }
+});
 
 // Register Service Worker
 if ("serviceWorker" in navigator) {

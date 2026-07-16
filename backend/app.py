@@ -35,7 +35,6 @@ def fetch_image(url):
             response = requests.get(url, timeout=45, headers=headers)
 
             if response.status_code == 200:
-                # Only return if we actually got image content
                 content_type = response.headers.get("Content-Type", "")
                 if "image" in content_type and len(response.content) > 1000:
                     return response
@@ -47,7 +46,7 @@ def fetch_image(url):
         except Exception as e:
             print(f"Attempt {i+1} error: {e}")
 
-        time.sleep(3)
+        time.sleep(2)
 
     return None
 
@@ -61,6 +60,7 @@ def generate_emoji():
 
         prompt = data.get("prompt", "").strip()
         image_b64 = data.get("image", "")
+        is_gif = data.get("is_gif", False)  # Frontend flag caught here
 
         if not prompt:
             return jsonify({"error": "Prompt required"}), 400
@@ -97,35 +97,81 @@ def generate_emoji():
 
         # Build Pollinations URL
         clean_prompt = quote(f"{safe_prompt}, standard 3D Apple emoji style, highly detailed classic emoji, clean, glossy, isolated on plain white background")
-        if uploaded_url:
-            # img2img mode with kontext model
-            url = (
-                f"https://image.pollinations.ai/prompt/"
-                f"{clean_prompt}?width=512&height=512&seed={seed}"
-                f"&model=kontext&nologo=true&nofeed=true"
-                f"&image={quote(uploaded_url)}"
+        
+        # ---------------- ANIMATED GIF LOGIC ----------------
+        if is_gif:
+            frames = []
+            print("GIF Mode Activated! Generating dynamic frames...")
+            
+            for i in range(3):
+                frame_seed = random.randint(1, 999999)
+                if uploaded_url:
+                    url = (
+                        f"https://image.pollinations.ai/prompt/"
+                        f"{clean_prompt}?width=512&height=512&seed={frame_seed}"
+                        f"&model=kontext&nologo=true&nofeed=true"
+                        f"&image={quote(uploaded_url)}"
+                    )
+                else:
+                    url = (
+                        f"https://image.pollinations.ai/prompt/"
+                        f"{clean_prompt}?width=512&height=512&seed={frame_seed}"
+                        f"&model=flux&nologo=true&nofeed=true"
+                    )
+
+                print(f"Fetching GIF Frame {i+1}: {url[:100]}...")
+                response = fetch_image(url)
+                
+                if response:
+                    img = Image.open(BytesIO(response.content)).convert("RGBA")
+                    frames.append(img)
+                
+                time.sleep(0.3)
+
+            if not frames:
+                return jsonify({"error": "AI server is busy. Could not generate GIF frames!"}), 500
+
+            # Merge frames into an actual moving GIF using Pillow
+            buffer = BytesIO()
+            frames[0].save(
+                buffer,
+                format="GIF",
+                save_all=True,
+                append_images=frames[1:],
+                duration=300,
+                loop=0
             )
+            img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
+            return jsonify({"image": img_str})
+
+        # ---------------- STATIC IMAGE LOGIC ----------------
         else:
-            # Text-to-image mode with flux model
-            url = (
-                f"https://image.pollinations.ai/prompt/"
-                f"{clean_prompt}?width=512&height=512&seed={seed}"
-                f"&model=flux&nologo=true&nofeed=true"
-            )
+            if uploaded_url:
+                url = (
+                    f"https://image.pollinations.ai/prompt/"
+                    f"{clean_prompt}?width=512&height=512&seed={seed}"
+                    f"&model=kontext&nologo=true&nofeed=true"
+                    f"&image={quote(uploaded_url)}"
+                )
+            else:
+                url = (
+                    f"https://image.pollinations.ai/prompt/"
+                    f"{clean_prompt}?width=512&height=512&seed={seed}"
+                    f"&model=flux&nologo=true&nofeed=true"
+                )
 
-        print(f"Fetching: {url[:120]}...")
-        response = fetch_image(url)
+            print(f"Fetching Static Image: {url[:120]}...")
+            response = fetch_image(url)
 
-        if not response:
-            return jsonify({"error": "AI server is busy. Please try again in a few seconds!"}), 500
+            if not response:
+                return jsonify({"error": "AI server is busy. Please try again in a few seconds!"}), 500
 
-        # Convert to PNG and encode
-        img = Image.open(BytesIO(response.content)).convert("RGBA")
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
-        img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
+            img = Image.open(BytesIO(response.content)).convert("RGBA")
+            buffer = BytesIO()
+            img.save(buffer, format="PNG")
+            img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-        return jsonify({"image": img_str})
+            return jsonify({"image": img_str})
 
     except Exception as e:
         import traceback
