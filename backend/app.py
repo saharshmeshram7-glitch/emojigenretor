@@ -49,7 +49,6 @@ def generate_emoji():
         if not prompt:
             return jsonify({"error": "Prompt required"}), 400
 
-        # Clean raw text prompt setup
         safe_prompt_text = prompt.encode('ascii', 'ignore').decode('ascii').strip()
         if not safe_prompt_text:
             safe_prompt_text = "cute emoji"
@@ -70,7 +69,6 @@ def generate_emoji():
             except Exception as upload_err:
                 print(f"Upload failed: {upload_err}")
 
-        # FIXED: "Apple" word removed and full prompt text combined safely before encoding
         full_prompt_text = f"{safe_prompt_text}, 3D emoji style, highly detailed gloss digital art, vibrant corporate design, isolated on plain white background"
         clean_prompt = quote(full_prompt_text)
 
@@ -100,13 +98,14 @@ def generate_emoji():
             img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
             return jsonify({"image": img_str})
 
-        # --- STATIC PHOTO LOGIC ---
+        # --- STATIC PHOTO LOGIC (FIXED TO TURBO FOR SPEED) ---
         else:
             seed = random.randint(1, 999999)
             if uploaded_url:
-                url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=kontext&nologo=true&nofeed=true&image={quote(uploaded_url)}"
+                url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=turbo&nologo=true&nofeed=true&image={quote(uploaded_url)}"
             else:
-                url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=flux&nologo=true&nofeed=true"
+                # Yahan bhi 'model=turbo' kar diya taaki 2 second mein render ho jaye
+                url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=turbo&nologo=true&nofeed=true"
 
             res = fetch_image(url)
             if not res:
