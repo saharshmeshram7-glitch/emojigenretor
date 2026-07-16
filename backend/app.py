@@ -26,7 +26,6 @@ def fetch_image(url):
         "Accept": "image/*, */*"
     }
     try:
-        # Timeout ko 15 seconds kiya safe rehne ke liye
         response = requests.get(url, timeout=15, headers=headers)
         if response.status_code == 200:
             content_type = response.headers.get("Content-Type", "")
@@ -80,7 +79,6 @@ def generate_emoji():
                 if uploaded_url:
                     url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=turbo&nologo=true&nofeed=true&image={quote(uploaded_url)}"
                 else:
-                    # Yahan 'model=turbo' lagaya hai jo super fast hai
                     url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=turbo&nologo=true&nofeed=true"
                 
                 res = fetch_image(url)
@@ -113,7 +111,8 @@ def generate_emoji():
 
             img = Image.open(BytesIO(res.content)).convert("RGBA")
             buffer = BytesIO()
-            img.save(buffer, buffer.format if buffer.format else "PNG")
+            # FIXED: buffer.format hata kar directly format="PNG" set kar diya hai
+            img.save(buffer, format="PNG")
             img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
             return jsonify({"image": img_str})
 
