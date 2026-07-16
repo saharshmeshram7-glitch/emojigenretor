@@ -49,9 +49,10 @@ def generate_emoji():
         if not prompt:
             return jsonify({"error": "Prompt required"}), 400
 
-        safe_prompt = quote(prompt.encode('ascii', 'ignore').decode('ascii').strip())
-        if not safe_prompt:
-            safe_prompt = "cute%20emoji"
+        # Clean raw text prompt setup
+        safe_prompt_text = prompt.encode('ascii', 'ignore').decode('ascii').strip()
+        if not safe_prompt_text:
+            safe_prompt_text = "cute emoji"
 
         uploaded_url = None
         if image_b64:
@@ -69,7 +70,9 @@ def generate_emoji():
             except Exception as upload_err:
                 print(f"Upload failed: {upload_err}")
 
-        clean_prompt = f"{safe_prompt},standard%203D%20Apple%20emoji%20style,highly%20detailed%20classic%20emoji,clean,glossy,isolated%20on%20plain%20white%20background"
+        # FIXED: "Apple" word removed and full prompt text combined safely before encoding
+        full_prompt_text = f"{safe_prompt_text}, 3D emoji style, highly detailed gloss digital art, vibrant corporate design, isolated on plain white background"
+        clean_prompt = quote(full_prompt_text)
 
         # --- DYNAMIC FAST GIF LOGIC ---
         if is_gif:
@@ -111,7 +114,6 @@ def generate_emoji():
 
             img = Image.open(BytesIO(res.content)).convert("RGBA")
             buffer = BytesIO()
-            # FIXED: buffer.format hata kar directly format="PNG" set kar diya hai
             img.save(buffer, format="PNG")
             img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
             return jsonify({"image": img_str})

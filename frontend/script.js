@@ -38,19 +38,16 @@ async function generateEmoji() {
     loading.classList.remove("hidden");
     outputDiv.innerHTML = "";
 
+    const payload = {
+        prompt: prompt,
+        is_gif: (style === "GIF")
+    };
+
+    if (selectedImageBase64) {
+        payload.image = selectedImageBase64;
+    }
+
     try {
-        const payload = {};
-
-        if (style === "GIF") {
-            payload.prompt = prompt;
-            payload.is_gif = true;
-        } else {
-            payload.prompt = `${prompt} ${style}`;
-            payload.is_gif = false;
-        }
-
-        if (selectedImageBase64) payload.image = selectedImageBase64;
-
         const response = await fetch(`${BACKEND_URL}/generate-emoji`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -70,7 +67,7 @@ async function generateEmoji() {
                 <button onclick="downloadImage('${data.image}', '${fileExt}')" style="padding:10px 20px; background:#6366f1; color:white; border:none; border-radius:8px; cursor:pointer;">Download</button>
             `;
         } else {
-            outputDiv.innerHTML = `<p style="color:#f87171;">${data.error || "Error occurred"}</p>`;
+            outputDiv.innerHTML = `<p style=\"color:#f87171;\">${data.error || "Error occurred"}</p>`;
         }
     } catch (error) {
         loading.classList.add("hidden");
@@ -79,8 +76,8 @@ async function generateEmoji() {
 }
 
 function downloadImage(base64, ext = "png") {
-    const link = document.createElement("a");
     const mimeType = (ext === "gif") ? "image/gif" : "image/png";
+    const link = document.createElement('a');
     link.href = `data:${mimeType};base64,` + base64;
     link.download = `ai_emoji.${ext}`;
     link.click();
