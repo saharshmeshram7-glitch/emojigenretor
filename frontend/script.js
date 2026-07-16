@@ -52,7 +52,7 @@ async function generateEmoji() {
 
     loading.classList.remove("hidden");
     const loadingMsg = document.getElementById("loading").querySelector("p");
-    loadingMsg.textContent = "Generating Emoji... (GIF takes ~15-20 secs ⏳)";
+    loadingMsg.textContent = "Generating Emoji...⏳)";
     outputDiv.innerHTML = "";
 
     try {
