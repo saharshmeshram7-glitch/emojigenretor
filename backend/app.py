@@ -4,7 +4,8 @@ import os
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
-from Flask import Flask, request, jsonify
+# Yahan lowercase 'flask' kar diya hai taaki crash na ho
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 import base64
@@ -20,14 +21,12 @@ CORS(app)
 def home():
     return "Emoji API Working!"
 
-# Fast fetch for Render's 30-second limit
 def fetch_image(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (compatible; EmojiGenerator/1.0)",
         "Accept": "image/*, */*"
     }
     try:
-        # Timeout ko 12 seconds kiya taaki Render crash na kare
         response = requests.get(url, timeout=12, headers=headers)
         if response.status_code == 200:
             content_type = response.headers.get("Content-Type", "")
@@ -76,7 +75,6 @@ def generate_emoji():
         # --- DYNAMIC FAST GIF LOGIC ---
         if is_gif:
             frames = []
-            # 2 frames banayenge taaki 30 seconds ke andar super fast process ho jaye
             for i in range(2):
                 seed = random.randint(1, 999999)
                 if uploaded_url:
