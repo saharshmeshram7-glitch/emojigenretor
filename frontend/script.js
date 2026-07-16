@@ -10,7 +10,7 @@ function previewImage(event) {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         selectedImageBase64 = e.target.result;
         document.getElementById("image-preview").src = selectedImageBase64;
         document.getElementById("image-preview-container").classList.remove("hidden");
@@ -37,7 +37,6 @@ const prompts = [
 ];
 
 async function generateEmoji() {
-
     const promptInput = document.getElementById("prompt");
     const style = document.getElementById("style").value;
     const outputDiv = document.getElementById("output");
@@ -53,14 +52,19 @@ async function generateEmoji() {
 
     loading.classList.remove("hidden");
     const loadingMsg = document.getElementById("loading").querySelector("p");
-    loadingMsg.textContent = "Generating Emoji... (First time may take ~60 secs ⏳)";
+    loadingMsg.textContent = "Generating Emoji... (GIF takes ~15-20 secs ⏳)";
     outputDiv.innerHTML = "";
 
     try {
-
         const payload = {
             prompt: `${prompt} ${style}`
         };
+
+        // GIF select hone par backend ko flag bhej rahe hain
+        if (style === "GIF emoji") {
+            payload.is_gif = true;
+        }
+
         if (selectedImageBase64) {
             payload.image = selectedImageBase64;
         }
@@ -83,33 +87,34 @@ async function generateEmoji() {
         clearTimeout(timeoutId);
 
         const data = await response.json();
-
         loading.classList.add("hidden");
 
         if (data.image) {
+            // Dynamic format detection for rendering and downloading
+            const isGif = style === "GIF emoji";
+            const mimeType = isGif ? "image/gif" : "image/png";
+            const fileExt = isGif ? "gif" : "png";
 
             outputDiv.innerHTML = `
-                <img src="data:image/png;base64,${data.image}" />
-
+                <img src="data:${mimeType};base64,${data.image}" />
                 <br><br>
-
-                <button onclick="downloadImage('${data.image}')">
+                <button onclick="downloadImage('${data.image}', '${fileExt}')">
                     Download
                 </button>
             `;
 
             history.innerHTML += `
                 <img 
-                    src="data:image/png;base64,${data.image}"
+                    src="data:${mimeType};base64,${data.image}"
                     class="history-img"
                 />
             `;
+        } else if (data.error) {
+            outputDiv.innerHTML = `<p style="color:#f87171;">${data.error}</p>`;
         }
 
     } catch (error) {
-
         loading.classList.add("hidden");
-
         let message = "Something went wrong. Please try again!";
         if (error.name === "AbortError") {
             message = "⏳ Request timed out. Server cold start le raha hai — thoda wait karke try karo!";
@@ -123,30 +128,25 @@ async function generateEmoji() {
     }
 }
 
-function downloadImage(base64) {
-
+function downloadImage(base64, ext = "png") {
     const link = document.createElement("a");
+    const mimeType = ext === "gif" ? "image/gif" : "image/png";
 
-    link.href = "data:image/png;base64," + base64;
-
-    link.download = "ai_emoji.png";
-
+    link.href = `data:${mimeType};base64,` + base64;
+    link.download = `ai_emoji.${ext}`;
     link.click();
 }
 
 function randomPrompt() {
-
     const random = prompts[
         Math.floor(Math.random() * prompts.length)
     ];
-
     document.getElementById("prompt").value = random;
 }
 
 document
     .getElementById("prompt")
-    .addEventListener("keypress", function(e) {
-
+    .addEventListener("keypress", function (e) {
         if (e.key === "Enter") {
             generateEmoji();
         }
