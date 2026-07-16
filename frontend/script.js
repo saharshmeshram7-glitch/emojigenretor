@@ -23,8 +23,6 @@ function removeImage() {
     document.getElementById("image-preview-container").classList.add("hidden");
 }
 
-const prompts = ["happy cat", "angry robot", "cute panda", "cool dog", "fire emoji"];
-
 async function generateEmoji() {
     const promptInput = document.getElementById("prompt");
     const style = document.getElementById("style").value;
@@ -72,11 +70,11 @@ async function generateEmoji() {
                 <button onclick="downloadImage('${data.image}', '${fileExt}')" style="padding:10px 20px; background:#6366f1; color:white; border:none; border-radius:8px; cursor:pointer;">Download</button>
             `;
         } else {
-            outputDiv.innerHTML = `<p style="color:#f87171;">${data.error || "Server Error"}</p>`;
+            outputDiv.innerHTML = `<p style="color:#f87171;">${data.error || "Error occurred"}</p>`;
         }
     } catch (error) {
         loading.classList.add("hidden");
-        outputDiv.innerHTML = `<p style="color:#f87171;">Connection timeout or backend waking up. Please retry in 30 seconds!</p>`;
+        outputDiv.innerHTML = `<p style="color:#f87171;">Connection error. Please try again!</p>`;
     }
 }
 
@@ -87,12 +85,3 @@ function downloadImage(base64, ext = "png") {
     link.download = `ai_emoji.${ext}`;
     link.click();
 }
-
-function randomPrompt() {
-    const random = prompts[Math.floor(Math.random() * prompts.length)];
-    document.getElementById("prompt").value = random;
-}
-
-document.getElementById("prompt").addEventListener("keypress", function (e) {
-    if (e.key === "Enter") generateEmoji();
-});

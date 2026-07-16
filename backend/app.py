@@ -33,10 +33,9 @@ def fetch_image(url):
                 content_type = response.headers.get("Content-Type", "")
                 if "image" in content_type and len(response.content) > 1000:
                     return response
-            print(f"Attempt {i+1} failed.")
         except Exception as e:
-            print(f"Attempt {i+1} error: {e}")
-        time.sleep(2)
+            print(f"Fetch error: {e}")
+        time.sleep(1)
     return None
 
 @app.route("/generate-emoji", methods=["POST"])
@@ -53,7 +52,6 @@ def generate_emoji():
         if not prompt:
             return jsonify({"error": "Prompt required"}), 400
 
-        seed = random.randint(1, 999999)
         safe_prompt = prompt.encode('ascii', 'ignore').decode('ascii').strip()
         if not safe_prompt:
             safe_prompt = "cute emoji"
@@ -72,46 +70,46 @@ def generate_emoji():
                         raw_url = res_json["data"]["url"]
                         uploaded_url = raw_url.replace("tmpfiles.org/", "tmpfiles.org/dl/")
             except Exception as upload_err:
-                print(f"Image upload failed: {upload_err}")
+                print(f"Upload failed: {upload_err}")
 
         clean_prompt = quote(f"{safe_prompt}, standard 3D Apple emoji style, highly detailed classic emoji, clean, glossy, isolated on plain white background")
-        
-        # --- GIF Mode ---
+
+        # --- ANIMATED GIF LOGIC ---
         if is_gif:
             frames = []
-            for i in range(3): # 3 frames dynamic animation ke liye
-                frame_seed = random.randint(1, 999999)
+            for i in range(3):
+                seed = random.randint(1, 999999)
                 if uploaded_url:
-                    url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={frame_seed}&model=kontext&nologo=true&nofeed=true&image={quote(uploaded_url)}"
+                    url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=kontext&nologo=true&nofeed=true&image={quote(uploaded_url)}"
                 else:
-                    url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={frame_seed}&model=flux&nologo=true&nofeed=true"
+                    url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=flux&nologo=true&nofeed=true"
                 
-                response = fetch_image(url)
-                if response:
-                    img = Image.open(BytesIO(response.content)).convert("RGBA")
-                    frames.append(img)
-                time.sleep(0.3)
+                res = fetch_image(url)
+                if res:
+                    frames.append(Image.open(BytesIO(res.content)).convert("RGBA"))
+                time.sleep(0.2)
 
             if not frames:
-                return jsonify({"error": "AI Server busy, no frames generated"}), 500
+                return jsonify({"error": "AI Server busy"}), 500
 
             buffer = BytesIO()
             frames[0].save(buffer, format="GIF", save_all=True, append_images=frames[1:], duration=300, loop=0)
             img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
             return jsonify({"image": img_str})
 
-        # --- Static Image Mode ---
+        # --- STATIC PHOTO LOGIC ---
         else:
+            seed = random.randint(1, 999999)
             if uploaded_url:
                 url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=kontext&nologo=true&nofeed=true&image={quote(uploaded_url)}"
             else:
                 url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=flux&nologo=true&nofeed=true"
 
-            response = fetch_image(url)
-            if not response:
+            res = fetch_image(url)
+            if not res:
                 return jsonify({"error": "AI Server busy"}), 500
 
-            img = Image.open(BytesIO(response.content)).convert("RGBA")
+            img = Image.open(BytesIO(res.content)).convert("RGBA")
             buffer = BytesIO()
             img.save(buffer, format="PNG")
             img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
