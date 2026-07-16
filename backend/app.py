@@ -44,7 +44,7 @@ def fetch_image(url):
                 print(f"Attempt {i+1}: Status {response.status_code}")
 
         except Exception as e:
-            print(f"Attempt {i+1} error: {e}")
+            print(f"Attempt {i+1} error: {e}")  # <-- Yahan bracket thik kar diya hai!
 
         time.sleep(2)
 
@@ -60,19 +60,17 @@ def generate_emoji():
 
         prompt = data.get("prompt", "").strip()
         image_b64 = data.get("image", "")
-        is_gif = data.get("is_gif", False)  # Frontend flag caught here
+        is_gif = data.get("is_gif", False)
 
         if not prompt:
             return jsonify({"error": "Prompt required"}), 400
 
         seed = random.randint(1, 999999)
 
-        # Strip any emoji/special characters from prompt for URL safety
         safe_prompt = prompt.encode('ascii', 'ignore').decode('ascii').strip()
         if not safe_prompt:
             safe_prompt = "cute emoji"
 
-        # Handle optional reference image upload
         uploaded_url = None
         if image_b64:
             try:
@@ -95,7 +93,6 @@ def generate_emoji():
             except Exception as upload_err:
                 print(f"Image upload failed: {upload_err}")
 
-        # Build Pollinations URL
         clean_prompt = quote(f"{safe_prompt}, standard 3D Apple emoji style, highly detailed classic emoji, clean, glossy, isolated on plain white background")
         
         # ---------------- ANIMATED GIF LOGIC ----------------
@@ -131,7 +128,6 @@ def generate_emoji():
             if not frames:
                 return jsonify({"error": "AI server is busy. Could not generate GIF frames!"}), 500
 
-            # Merge frames into an actual moving GIF using Pillow
             buffer = BytesIO()
             frames[0].save(
                 buffer,
