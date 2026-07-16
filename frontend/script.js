@@ -41,10 +41,10 @@ async function generateEmoji() {
     outputDiv.innerHTML = "";
 
     try {
-        const payload = { prompt: prompt };
+        const payload = {};
 
-        // Dono dropdown values (GIF ya GIF emoji) ke liye bulletproof check
-        if (style === "GIF" || style === "GIF emoji") {
+        if (style === "GIF") {
+            payload.prompt = prompt;
             payload.is_gif = true;
         } else {
             payload.prompt = `${prompt} ${style}`;
@@ -63,28 +63,36 @@ async function generateEmoji() {
         loading.classList.add("hidden");
 
         if (data.image) {
-            const isGif = (style === "GIF" || style === "GIF emoji");
-            const mimeType = isGif ? "image/gif" : "image/png";
-            const fileExt = isGif ? "gif" : "png";
+            const mimeType = (style === "GIF") ? "image/gif" : "image/png";
+            const fileExt = (style === "GIF") ? "gif" : "png";
 
             outputDiv.innerHTML = `
-                <img src="data:${mimeType};base64,${data.image}" />
+                <img src="data:${mimeType};base64,${data.image}" style="border-radius:12px; max-width:100%;" />
                 <br><br>
-                <button onclick="downloadImage('${data.image}', '${fileExt}')">Download</button>
+                <button onclick="downloadImage('${data.image}', '${fileExt}')" style="padding:10px 20px; background:#6366f1; color:white; border:none; border-radius:8px; cursor:pointer;">Download</button>
             `;
         } else {
-            outputDiv.innerHTML = `<p style="color:#f87171;">${data.error || "Error occurred"}</p>`;
+            outputDiv.innerHTML = `<p style="color:#f87171;">${data.error || "Server Error"}</p>`;
         }
     } catch (error) {
         loading.classList.add("hidden");
-        outputDiv.innerHTML = `<p style="color:#f87171;">Something went wrong. Backend waking up, please retry in 1 minute!</p>`;
+        outputDiv.innerHTML = `<p style="color:#f87171;">Connection timeout or backend waking up. Please retry in 30 seconds!</p>`;
     }
 }
 
 function downloadImage(base64, ext = "png") {
     const link = document.createElement("a");
-    const mimeType = ext === "gif" ? "image/gif" : "image/png";
+    const mimeType = (ext === "gif") ? "image/gif" : "image/png";
     link.href = `data:${mimeType};base64,` + base64;
     link.download = `ai_emoji.${ext}`;
     link.click();
 }
+
+function randomPrompt() {
+    const random = prompts[Math.floor(Math.random() * prompts.length)];
+    document.getElementById("prompt").value = random;
+}
+
+document.getElementById("prompt").addEventListener("keypress", function (e) {
+    if (e.key === "Enter") generateEmoji();
+});

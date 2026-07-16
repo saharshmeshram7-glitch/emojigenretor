@@ -33,12 +33,9 @@ def fetch_image(url):
                 content_type = response.headers.get("Content-Type", "")
                 if "image" in content_type and len(response.content) > 1000:
                     return response
-                else:
-                    print(f"Attempt {i+1}: Got non-image or empty response.")
-            else:
-                print(f"Attempt {i+1}: Status {response.status_code}")
+            print(f"Attempt {i+1} failed.")
         except Exception as e:
-            print(f"Attempt {i+1} error: {e}") # Bracket fixed here!
+            print(f"Attempt {i+1} error: {e}")
         time.sleep(2)
     return None
 
@@ -79,10 +76,10 @@ def generate_emoji():
 
         clean_prompt = quote(f"{safe_prompt}, standard 3D Apple emoji style, highly detailed classic emoji, clean, glossy, isolated on plain white background")
         
-        # GIF Mode
+        # --- GIF Mode ---
         if is_gif:
             frames = []
-            for i in range(3):
+            for i in range(3): # 3 frames dynamic animation ke liye
                 frame_seed = random.randint(1, 999999)
                 if uploaded_url:
                     url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={frame_seed}&model=kontext&nologo=true&nofeed=true&image={quote(uploaded_url)}"
@@ -103,7 +100,7 @@ def generate_emoji():
             img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
             return jsonify({"image": img_str})
 
-        # Static Image Mode
+        # --- Static Image Mode ---
         else:
             if uploaded_url:
                 url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=kontext&nologo=true&nofeed=true&image={quote(uploaded_url)}"
