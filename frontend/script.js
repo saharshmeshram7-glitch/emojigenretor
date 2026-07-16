@@ -1,4 +1,3 @@
-// Change this to your deployed Render backend URL after deploying your backend service
 const BACKEND_URL = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
     ? "http://127.0.0.1:5000"
     : "https://emojigenretor.onrender.com";
@@ -8,7 +7,6 @@ let selectedImageBase64 = "";
 function previewImage(event) {
     const file = event.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = function (e) {
         selectedImageBase64 = e.target.result;
@@ -25,161 +23,68 @@ function removeImage() {
     document.getElementById("image-preview-container").classList.add("hidden");
 }
 
-const prompts = [
-    "happy cat",
-    "angry robot",
-    "cute panda",
-    "laughing alien",
-    "cool dog",
-    "crying banana",
-    "fire emoji",
-    "ghost gamer"
-];
+const prompts = ["happy cat", "angry robot", "cute panda", "cool dog", "fire emoji"];
 
 async function generateEmoji() {
     const promptInput = document.getElementById("prompt");
     const style = document.getElementById("style").value;
     const outputDiv = document.getElementById("output");
     const loading = document.getElementById("loading");
-    const history = document.getElementById("history");
 
     const prompt = promptInput.value.trim();
-
     if (!prompt) {
         alert("Enter prompt!");
         return;
     }
 
     loading.classList.remove("hidden");
-    const loadingMsg = document.getElementById("loading").querySelector("p");
-    loadingMsg.textContent = "Generating Emoji...⏳)";
     outputDiv.innerHTML = "";
 
     try {
-        const payload = {
-            prompt: `${prompt} ${style}`
-        };
+        const payload = { prompt: prompt };
 
-        // GIF option checked
-        if (style === "GIF emoji") {
+        // Dono dropdown values (GIF ya GIF emoji) ke liye bulletproof check
+        if (style === "GIF" || style === "GIF emoji") {
             payload.is_gif = true;
+        } else {
+            payload.prompt = `${prompt} ${style}`;
+            payload.is_gif = false;
         }
 
-        if (selectedImageBase64) {
-            payload.image = selectedImageBase64;
-        }
+        if (selectedImageBase64) payload.image = selectedImageBase64;
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000);
-
-        const response = await fetch(
-            `${BACKEND_URL}/generate-emoji`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload),
-                signal: controller.signal
-            }
-        );
-        clearTimeout(timeoutId);
+        const response = await fetch(`${BACKEND_URL}/generate-emoji`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
 
         const data = await response.json();
         loading.classList.add("hidden");
 
         if (data.image) {
-            const isGif = style === "GIF emoji";
+            const isGif = (style === "GIF" || style === "GIF emoji");
             const mimeType = isGif ? "image/gif" : "image/png";
             const fileExt = isGif ? "gif" : "png";
 
             outputDiv.innerHTML = `
                 <img src="data:${mimeType};base64,${data.image}" />
                 <br><br>
-                <button onclick="downloadImage('${data.image}', '${fileExt}')">
-                    Download
-                </button>
+                <button onclick="downloadImage('${data.image}', '${fileExt}')">Download</button>
             `;
-
-            history.innerHTML += `
-                <img 
-                    src="data:${mimeType};base64,${data.image}"
-                    class="history-img"
-                />
-            `;
-        } else if (data.error) {
-            outputDiv.innerHTML = `<p style="color:#f87171;">${data.error}</p>`;
+        } else {
+            outputDiv.innerHTML = `<p style="color:#f87171;">${data.error || "Error occurred"}</p>`;
         }
-
     } catch (error) {
         loading.classList.add("hidden");
-        let message = "Something went wrong. Please try again!";
-        if (error.name === "AbortError") {
-            message = "⏳ Request timed out. Server cold start le raha hai — thoda wait karke try karo!";
-        } else if (!navigator.onLine) {
-            message = "📶 No internet connection!";
-        }
-
-        outputDiv.innerHTML = `<p style="color:#f87171;">${message}</p>`;
+        outputDiv.innerHTML = `<p style="color:#f87171;">Something went wrong. Backend waking up, please retry in 1 minute!</p>`;
     }
 }
 
 function downloadImage(base64, ext = "png") {
     const link = document.createElement("a");
     const mimeType = ext === "gif" ? "image/gif" : "image/png";
-
     link.href = `data:${mimeType};base64,` + base64;
     link.download = `ai_emoji.${ext}`;
     link.click();
 }
-
-function randomPrompt() {
-    const random = prompts[Math.floor(Math.random() * prompts.length)];
-    document.getElementById("prompt").value = random;
-}
-
-document.getElementById("prompt").addEventListener("keypress", function (e) {
-    if (e.key === "Enter") {
-        generateEmoji();
-    }
-});
-
-// Register Service Worker
-if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-        navigator.serviceWorker.register("sw.js")
-            .then((reg) => console.log("Service Worker registered!", reg))
-            .catch((err) => console.error("Service Worker registration failed:", err));
-    });
-}
-
-// Handle PWA Installation
-let deferredPrompt;
-const installBtn = document.getElementById("install-btn");
-
-window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (installBtn) {
-        installBtn.classList.remove("hidden");
-    }
-});
-
-if (installBtn) {
-    installBtn.addEventListener("click", async () => {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User response to install prompt: ${outcome}`);
-            deferredPrompt = null;
-            installBtn.classList.add("hidden");
-        }
-    });
-}
-
-window.addEventListener("appinstalled", () => {
-    console.log("PWA was installed");
-    if (installBtn) {
-        installBtn.classList.add("hidden");
-    }
-});
