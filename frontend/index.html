@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,62 +12,53 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
+
 <body>
 
-<div class="background"></div>
+    <div class="background"></div>
 
-<div class="container">
+    <div class="container">
 
-    <div class="logo-container">
-        <img src="favicon.jpeg" alt="Logo" class="logo-img">
-    </div>
-
-    <h1>✨ Emoji Generator</h1>
-
-    <p>Create stunning  emojis instantly 🎨</p>
-
-    <div class="input-group">
-        <input type="text" id="prompt" placeholder="Enter emoji prompt..." />
-
-        <div class="file-upload-container">
-            <label for="image-upload" class="file-upload-label">
-                📸 Reference Photo (Optional)
-            </label>
-            <input type="file" id="image-upload" accept="image/*" style="display: none;" onchange="previewImage(event)" />
-            <div id="image-preview-container" class="hidden">
-                <img id="image-preview" src="" alt="Preview">
-                <button type="button" class="remove-image-btn" onclick="removeImage()">✕</button>
-            </div>
+        <div class="logo-container">
+            <img src="favicon.jpeg" alt="Logo" class="logo-img">
         </div>
 
-        <select id="style">
-            <option value="3d emoji">3D</option>
-            <option value="cute emoji">Cute</option>
-            <option value="pixel emoji">Pixel</option>
-            <option value="cartoon emoji">Cartoon</option>
-            <option value="anime emoji">Anime</option>
-            <option value="GIF emoji" >GIF</option>
-        </select>
+        <h1>✨ Emoji Generator</h1>
+
+        <p>Create stunning emojis instantly 🎨</p>
+
+        <div class="input-group">
+            <input type="text" id="prompt" placeholder="Enter emoji prompt..." />
+
+            <select id="style">
+                <option value="3d emoji">3D</option>
+                <option value="cute emoji">Cute</option>
+                <option value="pixel emoji">Pixel</option>
+                <option value="cartoon emoji">Cartoon</option>
+                <option value="anime emoji">Anime</option>
+                <option value="GIF emoji">GIF</option>
+            </select>
+        </div>
+
+        <div class="buttons">
+            <button onclick="generateEmoji()">Generate</button>
+            <button onclick="randomPrompt()">Random</button>
+            <button id="install-btn" class="hidden">Install App</button>
+        </div>
+
+        <div id="loading" class="hidden">
+            <div class="loader"></div>
+            <p>Generating Emoji...</p>
+        </div>
+
+        <div id="output"></div>
+
+        <div id="history"></div>
+
     </div>
 
-    <div class="buttons">
-        <button onclick="generateEmoji()">Generate</button>
-        <button onclick="randomPrompt()">Random</button>
-        <button id="install-btn" class="hidden">Install App</button>
-    </div>
-
-    <div id="loading" class="hidden">
-        <div class="loader"></div>
-        <p>Generating  Emoji...</p>
-    </div>
-
-    <div id="output"></div>
-
-    <div id="history"></div>
-
-</div>
-
-<script src="script.js"></script>
+    <script src="script.js"></script>
 
 </body>
+
 </html>
