@@ -18,11 +18,11 @@ CORS(app)
 
 @app.route("/")
 def home():
-    return "Emoji API Working!"
+    return "Emoji API is running smoothly on AndroidIDE setup!"
 
 def fetch_image(url):
     headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; EmojiGenerator/1.0)",
+        "User-Agent": "Mozilla/5.0 (Linux; Android; AndroidIDE) EmojiGenerator/2.0",
         "Accept": "image/*, */*"
     }
     try:
@@ -49,9 +49,21 @@ def generate_emoji():
         if not prompt:
             return jsonify({"error": "Prompt required"}), 400
 
+        # Non-ASCII characters safekeeping
         safe_prompt_text = prompt.encode('ascii', 'ignore').decode('ascii').strip()
         if not safe_prompt_text:
-            safe_prompt_text = "cute emoji"
+            safe_prompt_text = "smiley"
+
+        # STRICKT ANTI-STICKER PROMPT SYSTEM
+        # Sticker style white cutouts aur text labels ko strict filter karne ke liye parameters optimize kiye hain.
+        full_prompt_text = (
+            f"An official isolated 3D vector emoji of {safe_prompt_text}, "
+            f"authentic Apple emoji style, high-gloss shiny texture, realistic soft lighting, "
+            f"centered in frame, perfectly spherical shapes, 8k resolution detailed digital art, "
+            f"completely blank flat white background, strictly no white sticker borders, "
+            f"no outer dashed line, no text, no text banners, no sticker outline"
+        )
+        clean_prompt = quote(full_prompt_text)
 
         uploaded_url = None
         if image_b64:
@@ -68,9 +80,6 @@ def generate_emoji():
                         uploaded_url = raw_url.replace("tmpfiles.org/", "tmpfiles.org/dl/")
             except Exception as upload_err:
                 print(f"Upload failed: {upload_err}")
-
-        full_prompt_text = f"{safe_prompt_text}, 3D emoji style, highly detailed gloss digital art, vibrant corporate design, isolated on plain white background"
-        clean_prompt = quote(full_prompt_text)
 
         # --- DYNAMIC FAST GIF LOGIC ---
         if is_gif:
@@ -98,13 +107,12 @@ def generate_emoji():
             img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
             return jsonify({"image": img_str})
 
-        # --- STATIC PHOTO LOGIC (FIXED TO TURBO FOR SPEED) ---
+        # --- STATIC EMOJI LOGIC ---
         else:
             seed = random.randint(1, 999999)
             if uploaded_url:
                 url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=turbo&nologo=true&nofeed=true&image={quote(uploaded_url)}"
             else:
-                # Yahan bhi 'model=turbo' kar diya taaki 2 second mein render ho jaye
                 url = f"https://image.pollinations.ai/prompt/{clean_prompt}?width=512&height=512&seed={seed}&model=turbo&nologo=true&nofeed=true"
 
             res = fetch_image(url)
@@ -121,5 +129,6 @@ def generate_emoji():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
+    # AndroidIDE defaults or production deployment configurations
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=False)
