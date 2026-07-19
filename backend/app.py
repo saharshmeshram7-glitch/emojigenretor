@@ -18,11 +18,11 @@ CORS(app)
 
 @app.route("/")
 def home():
-    return "Emoji API is running smoothly on AndroidIDE setup!"
+    return "Emoji API Working!"
 
 def fetch_image(url):
     headers = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android; AndroidIDE) EmojiGenerator/2.0",
+        "User-Agent": "Mozilla/5.0 (compatible; EmojiGenerator/1.0)",
         "Accept": "image/*, */*"
     }
     try:
@@ -49,20 +49,12 @@ def generate_emoji():
         if not prompt:
             return jsonify({"error": "Prompt required"}), 400
 
-        # Non-ASCII characters safekeeping
         safe_prompt_text = prompt.encode('ascii', 'ignore').decode('ascii').strip()
         if not safe_prompt_text:
             safe_prompt_text = "smiley"
 
-        # STRICKT ANTI-STICKER PROMPT SYSTEM
-        # Sticker style white cutouts aur text labels ko strict filter karne ke liye parameters optimize kiye hain.
-        full_prompt_text = (
-            f"An official isolated 3D vector emoji of {safe_prompt_text}, "
-            f"authentic Apple emoji style, high-gloss shiny texture, realistic soft lighting, "
-            f"centered in frame, perfectly spherical shapes, 8k resolution detailed digital art, "
-            f"completely blank flat white background, strictly no white sticker borders, "
-            f"no outer dashed line, no text, no text banners, no sticker outline"
-        )
+        # Sticker texture aur text ko avoid karne ke liye rigid emoji prompts use kiye hain
+        full_prompt_text = f"An official 3D vector emoji of {safe_prompt_text}, Apple emoji style, high-gloss glossy finish, smooth shading, centered, isolated on a solid plain white background, no text, no borders, no sticker outline"
         clean_prompt = quote(full_prompt_text)
 
         uploaded_url = None
@@ -107,7 +99,7 @@ def generate_emoji():
             img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
             return jsonify({"image": img_str})
 
-        # --- STATIC EMOJI LOGIC ---
+        # --- STATIC PHOTO LOGIC ---
         else:
             seed = random.randint(1, 999999)
             if uploaded_url:
@@ -129,6 +121,5 @@ def generate_emoji():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    # AndroidIDE defaults or production deployment configurations
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port)
