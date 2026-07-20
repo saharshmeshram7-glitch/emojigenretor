@@ -4,7 +4,7 @@ import os
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import requests
 import base64
@@ -14,12 +14,28 @@ import random
 from urllib.parse import quote
 
 app = Flask(__name__)
-CORS(app, origins=[
+CORS(app, resources={r"/*": {"origins": [
     "http://localhost:3000",
     "http://localhost:5000",
     "http://127.0.0.1:5000",
     "https://emojigenretor.vercel.app"
-])
+]}})
+
+@app.after_request
+def add_cors_headers(response):
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+        "https://emojigenretor.vercel.app"
+    ]
+    origin = request.headers.get("Origin")
+    if origin in allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,HEAD,POST,OPTIONS"
+    return response
 
 @app.route("/")
 def home():
