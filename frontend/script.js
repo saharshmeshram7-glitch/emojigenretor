@@ -1,4 +1,10 @@
-const BACKEND_URL = "http://127.0.0.1:5000";
+const LOCAL_BACKEND_URL = "http://127.0.0.1:5000";
+const REMOTE_BACKEND_URL = "https://emojigenretor.onrender.com"; // actual backend deployment URL
+const BACKEND_URL = window.BACKEND_URL || (
+    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? LOCAL_BACKEND_URL
+        : REMOTE_BACKEND_URL
+);
 
 // --- SPA Routing (Tab Switching) ---
 function switchTab(tabId) {
@@ -122,7 +128,8 @@ async function generateEmoji() {
         }
     } catch (error) {
         loading.classList.add("hidden");
-        showToast("Connection error. Is the backend running?", "error");
+        console.error("generateEmoji fetch error:", error);
+        showToast(`Connection error to ${BACKEND_URL}. Is the backend running?`, "error");
     }
 }
 
