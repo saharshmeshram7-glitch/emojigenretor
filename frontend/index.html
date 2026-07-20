@@ -7,57 +7,120 @@
     <title>AI Emoji Generator</title>
     <link rel="icon" type="image/jpeg" href="favicon.jpeg">
     <link rel="manifest" href="manifest.json">
-
-    <link rel="stylesheet" href="style.css">
-
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Cache busting added to force browser to load new styles -->
+    <link rel="stylesheet" href="style.css?v=3">
+    <!-- Modern Outfit Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
-    <div class="background"></div>
-
-    <div class="container">
-
-        <div class="logo-container">
-            <img src="favicon.jpeg" alt="Logo" class="logo-img">
-        </div>
-
-        <h1>✨ Emoji Generator</h1>
-
-        <p>Create stunning emojis instantly 🎨</p>
-
-        <div class="input-group">
-            <input type="text" id="prompt" placeholder="Enter emoji prompt..." />
-
-            <select id="style">
-                <option value="3d emoji">3D</option>
-                <option value="cute emoji">Cute</option>
-                <option value="pixel emoji">Pixel</option>
-                <option value="cartoon emoji">Cartoon</option>
-                <option value="anime emoji">Anime</option>
-                <option value="GIF emoji">GIF</option>
-            </select>
-        </div>
-
-        <div class="buttons">
-            <button onclick="generateEmoji()">Generate</button>
-            <button onclick="randomPrompt()">Random</button>
-            <button id="install-btn" class="hidden">Install App</button>
-        </div>
-
-        <div id="loading" class="hidden">
-            <div class="loader"></div>
-            <p>Generating Emoji...</p>
-        </div>
-
-        <div id="output"></div>
-
-        <div id="history"></div>
-
+    <div class="mesh-background">
+        <div class="color-blob blob1"></div>
+        <div class="color-blob blob2"></div>
+        <div class="color-blob blob3"></div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <img src="favicon.jpeg" alt="Logo" class="nav-logo">
+            <span>Emoji Generator</span>
+        </div>
+        <div class="nav-links">
+            <button class="nav-btn active" onclick="switchTab('home')">🏠 Home</button>
+            <button class="nav-btn" onclick="switchTab('history')">🕒 Gallery</button>
+            <button class="nav-btn" onclick="switchTab('profile')">👤 Profile</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        
+        <!-- SECTION: HOME -->
+        <section id="home-section" class="app-section active">
+            <div class="glass-card main-generator">
+                <div class="logo-container" style="margin-bottom: 15px;">
+                    <img src="favicon.jpeg" alt="Logo" class="logo-img" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.2);">
+                </div>
+                <h1>✨ Emoji Generator</h1>
+                <p class="subtitle">Create stunning emojis instantly 🎨</p>
+
+                <div class="input-group">
+                    <input type="text" id="prompt" placeholder="e.g., happy cyber dog..." autocomplete="off" />
+
+                    <select id="style">
+                        <option value="3d emoji">3D Premium</option>
+                        <option value="cute emoji">Kawaii Cute</option>
+                        <option value="pixel emoji">Retro Pixel</option>
+                        <option value="cartoon emoji">Cartoon Flat</option>
+                        <option value="anime emoji">Anime Style</option>
+                        <option value="GIF">Animated GIF</option>
+                    </select>
+                </div>
+
+                <div class="buttons">
+                    <button class="primary-btn glow-effect" onclick="generateEmoji()">Generate Now</button>
+                    <button class="secondary-btn" onclick="randomPrompt()">🎲 Surprise Me</button>
+                </div>
+
+                <!-- Skeleton Loader (hidden by default) -->
+                <div id="loading" class="hidden">
+                    <div class="skeleton-loader">
+                        <div class="skeleton-img pulse"></div>
+                        <p class="loading-text">Painting pixels...</p>
+                    </div>
+                </div>
+
+                <!-- Result Area -->
+                <div id="output"></div>
+            </div>
+        </section>
+
+
+        <!-- SECTION: HISTORY GALLERY -->
+        <section id="history-section" class="app-section hidden">
+            <div class="glass-card wide-card">
+                <h2>🕒 Your Masterpieces</h2>
+                <p class="subtitle">A collection of your recently generated emojis.</p>
+                <div id="history-grid" class="history-grid">
+                    <!-- Javascript will populate this -->
+                </div>
+                <div id="empty-history" class="hidden">
+                    <p>No emojis generated yet. Go make some magic!</p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- SECTION: PROFILE & SETTINGS -->
+        <section id="profile-section" class="app-section hidden">
+            <div class="glass-card">
+                <h2>👤 Your Profile</h2>
+                
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <h3 id="stat-total">0</h3>
+                        <p>Emojis Created</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3 id="stat-favorite">N/A</h3>
+                        <p>Favorite Style</p>
+                    </div>
+                </div>
+
+                <div class="settings-actions">
+                    <button class="danger-btn" onclick="clearData()">🗑️ Clear All Data</button>
+                    <button id="install-btn" class="secondary-btn hidden">⬇️ Install App</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="script.js?v=3"></script>
 
 </body>
 
