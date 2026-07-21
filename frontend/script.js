@@ -6,6 +6,8 @@ const BACKEND_URL = window.BACKEND_URL || (
         : REMOTE_BACKEND_URL
 );
 
+let currentEmoji = null;
+
 // --- SPA Routing (Tab Switching) ---
 function switchTab(tabId) {
     // Hide all sections
@@ -27,7 +29,7 @@ function switchTab(tabId) {
     }
 
     // Activate corresponding nav button
-    const targetBtn = Array.from(document.querySelectorAll('.nav-btn')).find(btn => btn.getAttribute('onclick').includes(tabId));
+    const targetBtn = Array.from(document.querySelectorAll('.nav-btn')).find(btn => btn.getAttribute('onclick')?.includes(tabId));
     if (targetBtn) {
         targetBtn.classList.add('active');
     }
@@ -44,6 +46,7 @@ function switchTab(tabId) {
 // --- Toast Notifications ---
 function showToast(message, type = 'success') {
     const container = document.getElementById("toast-container");
+    if (!container) return;
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
     
@@ -54,7 +57,7 @@ function showToast(message, type = 'success') {
     
     setTimeout(() => {
         toast.remove();
-    }, 3400); // Wait for animation to finish completely
+    }, 3400);
 }
 
 
@@ -76,10 +79,11 @@ function randomPrompt() {
 
 async function generateEmoji() {
     const promptInput = document.getElementById("prompt");
-    const style = document.getElementById("style").value;
+    const styleSelect = document.getElementById("style");
     const outputDiv = document.getElementById("output");
     const loading = document.getElementById("loading");
 
+    const style = styleSelect.value;
     const prompt = promptInput.value.trim();
     if (!prompt) {
         showToast("Please enter a prompt!", "error");
@@ -111,16 +115,24 @@ async function generateEmoji() {
             const fileExt = (style === "GIF") ? "gif" : "png";
             const dataUrl = `data:${mimeType};base64,${data.image}`;
 
+            currentEmoji = {
+                base64: data.image,
+                ext: fileExt,
+                mimeType: mimeType,
+                dataUrl: dataUrl,
+                style: style
+            };
+
             outputDiv.innerHTML = `
-                <img src="${dataUrl}" class="generated-img" />
+                <img src="${dataUrl}" class="generated-img" alt="Generated Emoji" />
                 <div class="action-buttons">
-                    <button class="action-btn primary" onclick="downloadImage('${data.image}', '${fileExt}')">⬇️ Download</button>
-                    <button class="action-btn" onclick="copyImage('${data.image}', '${mimeType}')">📋 Copy</button>
-                    <button class="action-btn" onclick="shareImage('${dataUrl}', '${fileExt}')">🔗 Share</button>
+                    <button class="action-btn primary" onclick="downloadCurrentEmoji()">⬇️ Download</button>
+                    <button class="action-btn" onclick="copyCurrentEmoji()">📋 Copy</button>
+                    <button class="action-btn" onclick="shareCurrentEmoji()">🔗 Share</button>
                 </div>
             `;
             
-            showToast("Emoji generated successfully!");
+            showToast(style === "GIF" ? "Animated GIF generated!" : "Emoji generated successfully!");
             saveToHistory(data.image, fileExt, mimeType, style);
             updateStats(style);
         } else {
@@ -135,6 +147,21 @@ async function generateEmoji() {
 
 
 // --- Action Handlers ---
+function downloadCurrentEmoji() {
+    if (!currentEmoji) return;
+    downloadImage(currentEmoji.base64, currentEmoji.ext);
+}
+
+async function copyCurrentEmoji() {
+    if (!currentEmoji) return;
+    await copyImage(currentEmoji.base64, currentEmoji.mimeType);
+}
+
+async function shareCurrentEmoji() {
+    if (!currentEmoji) return;
+    await shareImage(currentEmoji.dataUrl, currentEmoji.ext);
+}
+
 function downloadImage(base64, ext = "png") {
     const mimeType = (ext === "gif") ? "image/gif" : "image/png";
     const link = document.createElement('a');
@@ -185,10 +212,8 @@ function saveToHistory(base64, ext, mimeType, style) {
     const history = JSON.parse(localStorage.getItem("emojiHistory") || "[]");
     const dataUrl = `data:${mimeType};base64,${base64}`;
     
-    // Add to beginning of array, save timestamp
     history.unshift({ base64, ext, mimeType, dataUrl, style, timestamp: Date.now() });
     
-    // Keep only last 30 for the gallery
     if (history.length > 30) {
         history.pop();
     }
@@ -216,14 +241,29 @@ function renderHistoryGrid() {
         const card = document.createElement("div");
         card.className = "history-card";
         
-        card.innerHTML = `
-            <img src="${item.dataUrl}" alt="Emoji" />
-            <div class="overlay-actions">
-                <button class="overlay-btn" onclick="downloadImage('${item.base64}', '${item.ext}')">⬇️ Save</button>
-                <button class="overlay-btn" onclick="copyImage('${item.base64}', '${item.mimeType}')">📋 Copy</button>
-            </div>
-        `;
-        
+        const img = document.createElement("img");
+        img.src = item.dataUrl;
+        img.alt = "Emoji";
+
+        const overlay = document.createElement("div");
+        overlay.className = "overlay-actions";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.className = "overlay-btn";
+        saveBtn.innerText = "⬇️ Save";
+        saveBtn.onclick = () => downloadImage(item.base64, item.ext);
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "overlay-btn";
+        copyBtn.innerText = "📋 Copy";
+        copyBtn.onclick = () => copyImage(item.base64, item.mimeType);
+
+        overlay.appendChild(saveBtn);
+        overlay.appendChild(copyBtn);
+
+        card.appendChild(img);
+        card.appendChild(overlay);
+
         historyGrid.appendChild(card);
     });
 }
@@ -242,7 +282,8 @@ function updateStats(style) {
 function renderProfileStats() {
     const stats = JSON.parse(localStorage.getItem("emojiStats") || '{"total": 0, "styles": {}}');
     
-    document.getElementById("stat-total").innerText = stats.total;
+    const statTotal = document.getElementById("stat-total");
+    if (statTotal) statTotal.innerText = stats.total;
     
     let favStyle = "N/A";
     let max = 0;
@@ -253,11 +294,11 @@ function renderProfileStats() {
         }
     }
     
-    // Capitalize first letter
     if (favStyle !== "N/A") {
         favStyle = favStyle.charAt(0).toUpperCase() + favStyle.slice(1).replace(" emoji", "");
     }
-    document.getElementById("stat-favorite").innerText = favStyle;
+    const statFav = document.getElementById("stat-favorite");
+    if (statFav) statFav.innerText = favStyle;
 }
 
 function clearData() {
@@ -265,7 +306,7 @@ function clearData() {
         localStorage.removeItem("emojiHistory");
         localStorage.removeItem("emojiStats");
         showToast("All data cleared successfully");
-        renderProfileStats(); // Refresh stats view
+        renderProfileStats();
     }
 }
 
@@ -278,6 +319,12 @@ window.addEventListener('beforeinstallprompt', (e) => {
     const installBtn = document.getElementById("install-btn");
     if (installBtn) {
         installBtn.classList.remove("hidden");
+    }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const installBtn = document.getElementById("install-btn");
+    if (installBtn) {
         installBtn.addEventListener("click", async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
