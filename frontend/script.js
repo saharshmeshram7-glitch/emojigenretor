@@ -6,6 +6,8 @@ const BACKEND_URL = window.BACKEND_URL || (
         : REMOTE_BACKEND_URL
 );
 
+const MAX_HISTORY_ITEMS = 12;
+
 let currentEmoji = null;
 
 // --- SPA Routing (Tab Switching) ---
@@ -133,7 +135,7 @@ async function generateEmoji() {
             `;
             
             showToast(style === "GIF" ? "Animated GIF generated!" : "Emoji generated successfully!");
-            saveToHistory(data.image, fileExt, mimeType, style);
+            await saveToHistory(dataUrl, fileExt, mimeType, style);
             updateStats(style);
         } else {
             showToast(data.error || "Generation failed", "error");
@@ -162,18 +164,25 @@ async function shareCurrentEmoji() {
     await shareImage(currentEmoji.dataUrl, currentEmoji.ext);
 }
 
-function downloadImage(base64, ext = "png") {
-    const mimeType = (ext === "gif") ? "image/gif" : "image/png";
+function normalizeDataUrl(value, mimeType) {
+    if (typeof value !== 'string') return '';
+    if (value.startsWith('data:')) return value;
+    return `data:${mimeType};base64,${value}`;
+}
+
+function downloadImage(base64OrDataUrl, ext = "png", mimeType = "image/png") {
+    const href = normalizeDataUrl(base64OrDataUrl, mimeType);
     const link = document.createElement('a');
-    link.href = `data:${mimeType};base64,` + base64;
+    link.href = href;
     link.download = `ai_emoji_${Date.now()}.${ext}`;
     link.click();
     showToast("Download started!");
 }
 
-async function copyImage(base64, mimeType) {
+async function copyImage(base64OrDataUrl, mimeType) {
     try {
-        const res = await fetch(`data:${mimeType};base64,${base64}`);
+        const dataUrl = normalizeDataUrl(base64OrDataUrl, mimeType);
+        const res = await fetch(dataUrl);
         const blob = await res.blob();
         await navigator.clipboard.write([
             new ClipboardItem({ [mimeType]: blob })
@@ -208,23 +217,75 @@ async function shareImage(dataUrl, ext) {
 
 
 // --- History & Data Management ---
-function saveToHistory(base64, ext, mimeType, style) {
-    const history = JSON.parse(localStorage.getItem("emojiHistory") || "[]");
-    const dataUrl = `data:${mimeType};base64,${base64}`;
-    
-    history.unshift({ base64, ext, mimeType, dataUrl, style, timestamp: Date.now() });
-    
-    if (history.length > 30) {
+function parseStorageItem(key, fallback) {
+    try {
+        return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+    } catch (err) {
+        console.warn(`Storage parse failed for ${key}:`, err);
+        return fallback;
+    }
+}
+
+function safeSetStorageItem(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (err) {
+        if (err instanceof DOMException && (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+            return false;
+        }
+        throw err;
+    }
+}
+
+function createThumbnailDataUrl(dataUrl, size = 160) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, size, size);
+            const aspect = Math.min(size / img.width, size / img.height);
+            const w = img.width * aspect;
+            const h = img.height * aspect;
+            const x = (size - w) / 2;
+            const y = (size - h) / 2;
+            ctx.drawImage(img, x, y, w, h);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+    });
+}
+
+async function saveToHistory(dataUrl, ext, mimeType, style) {
+    const history = parseStorageItem("emojiHistory", []);
+    const thumbnailUrl = await createThumbnailDataUrl(dataUrl);
+
+    history.unshift({ dataUrl: thumbnailUrl, ext, mimeType, style, timestamp: Date.now() });
+    while (history.length > MAX_HISTORY_ITEMS) {
         history.pop();
     }
-    
-    localStorage.setItem("emojiHistory", JSON.stringify(history));
+
+    let stored = safeSetStorageItem("emojiHistory", JSON.stringify(history));
+    if (!stored) {
+        while (history.length > 0 && !stored) {
+            history.pop();
+            stored = safeSetStorageItem("emojiHistory", JSON.stringify(history));
+        }
+        if (!stored) {
+            localStorage.removeItem("emojiHistory");
+            showToast("History storage is full. Recent emoji saved only for this session.", "error");
+        }
+    }
 }
 
 function renderHistoryGrid() {
     const historyGrid = document.getElementById("history-grid");
     const emptyHistory = document.getElementById("empty-history");
-    const history = JSON.parse(localStorage.getItem("emojiHistory") || "[]");
+    const history = parseStorageItem("emojiHistory", []);
     
     historyGrid.innerHTML = "";
     
@@ -251,12 +312,12 @@ function renderHistoryGrid() {
         const saveBtn = document.createElement("button");
         saveBtn.className = "overlay-btn";
         saveBtn.innerText = "⬇️ Save";
-        saveBtn.onclick = () => downloadImage(item.base64, item.ext);
+        saveBtn.onclick = () => downloadImage(item.dataUrl, item.ext, item.mimeType);
 
         const copyBtn = document.createElement("button");
         copyBtn.className = "overlay-btn";
         copyBtn.innerText = "📋 Copy";
-        copyBtn.onclick = () => copyImage(item.base64, item.mimeType);
+        copyBtn.onclick = () => copyImage(item.dataUrl, item.mimeType);
 
         overlay.appendChild(saveBtn);
         overlay.appendChild(copyBtn);
