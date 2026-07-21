@@ -7,6 +7,8 @@ if sys.stdout.encoding != 'utf-8':
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import base64
 from io import BytesIO
 from PIL import Image
@@ -44,39 +46,51 @@ def home():
 def fetch_image_from_pollinations(prompt_text, seed):
     """
     Uses Pollinations GET endpoint to generate images without an API key.
-    Includes model fallback ('', 'turbo', 'flux') and retry logic for rate limits.
+    Includes fallback and shortened external timeouts to avoid worker timeouts.
     """
     print(f"[DEBUG] Sending to API (GET): Prompt: {prompt_text[:100]}... Seed: {seed}")
-    
-    encoded_prompt = urllib.parse.quote(prompt_text)
+
+    encoded_prompt = urllib.parse.quote(prompt_text, safe='')
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-    models = ["", "turbo", "flux"]
-    
-    max_retries = 3
-    for attempt in range(max_retries):
+    models = ["", "turbo"]
+
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=1,
+        connect=1,
+        read=1,
+        status=1,
+        allowed_methods=["GET"],
+        status_forcelist=[429, 500, 502, 503, 504],
+        backoff_factor=0.5,
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("https://", adapter)
+
+    timeout = (4, 10)
+    for attempt in range(1, 3):
         for m in models:
             model_query = f"&model={m}" if m else ""
             url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?seed={seed}&nologo=true{model_query}"
             try:
-                print(f"[DEBUG] Attempt {attempt+1}/{max_retries} model='{m}'...")
-                response = requests.get(url, timeout=20, headers=headers)
-                
+                print(f"[DEBUG] Attempt {attempt}/2 model='{m}'...")
+                response = session.get(url, timeout=timeout, headers=headers)
+
                 if response.status_code == 200:
                     content_type = response.headers.get("Content-Type", "")
                     if "image" in content_type and len(response.content) > 1000:
                         return response.content
-                    else:
-                        print(f"[DEBUG] WARNING: Got 200 but not valid image. Size={len(response.content)}")
+                    print(f"[DEBUG] WARNING: Got 200 but not valid image. Size={len(response.content)}")
                 elif response.status_code == 429:
                     print(f"[DEBUG] Rate limited (429). Retrying after short delay...")
-                    time.sleep(1.5)
                 else:
                     print(f"[DEBUG] Status {response.status_code}")
-            except Exception as e:
+            except requests.exceptions.RequestException as e:
                 print(f"[DEBUG] Request error: {e}")
             time.sleep(0.5)
         time.sleep(1)
-            
+
     return None
 
 def generate_animated_gif_from_image(img_bytes):
@@ -120,12 +134,12 @@ def generate_emoji():
 
         prompt = data.get("prompt", "").strip()
         style = data.get("style", "3d emoji").strip()
-        is_gif = data.get("is_gif", False)
+        is_gif = bool(data.get("is_gif", False))
 
         if not prompt:
             return jsonify({"error": "Prompt required"}), 400
 
-        safe_prompt_text = prompt.encode('ascii', 'ignore').decode('ascii').strip()
+        safe_prompt_text = prompt.strip()
         if not safe_prompt_text:
             safe_prompt_text = "cute emoji"
 
